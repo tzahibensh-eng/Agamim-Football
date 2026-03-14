@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כדורגל אגם ג׳ VIP — דשבורד נוכחות</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root {
+    --pitch-dark: #0f4c2e;
+    --pitch-mid: #15803d;
+    --pitch-light: #22c55e;
+    --pitch-glow: #4ade80;
+    --accent: #10b981;
+    --accent-light: #d1fae5;
+  }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0fdf4; }
+  .kpi-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    border: 1px solid #e5e7eb;
+    padding: 28px 24px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.10); }
+  .kpi-value { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+  .kpi-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin-bottom: 8px; }
+  .section-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    border: 1px solid #e5e7eb;
+    padding: 32px;
+  }
+  .section-title { font-size: 1.25rem; font-weight: 700; color: #111827; }
+  .section-subtitle { font-size: 0.875rem; color: #6b7280; margin-top: 2px; margin-bottom: 20px; }
+  .dataTables_wrapper .dataTables_filter input { border: 1px solid #d1d5db; border-radius: 8px; padding: 6px 12px; }
+  .dataTables_wrapper .dataTables_length select { border: 1px solid #d1d5db; border-radius: 8px; padding: 4px 10px; }
+  #sidebar a.active { background: var(--accent-light); color: var(--pitch-dark); font-weight: 600; }
+  #sidebar a { border-radius: 8px; transition: background 0.15s; }
+  .weekly-select, .filter-select {
+    padding: 8px 14px;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .weekly-select { width: 100%; max-width: 360px; padding: 10px 16px; font-size: 0.95rem; border-radius: 12px; }
+  .filter-select { min-width: 160px; }
+  .weekly-select:focus, .filter-select:focus { border-color: var(--accent); outline: none; }
+  .player-chip {
+    display: inline-block;
+    background: var(--accent-light);
+    color: var(--pitch-dark);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .player-chip.highlighted {
+    background: #fbbf24;
+    color: #78350f;
+    font-weight: 700;
+  }
+  .filter-bar {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 12px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: sticky;
+    z-index: 40;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #374151;
+    background: #f9fafb;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .toggle-btn:hover { background: #e5e7eb; }
+  .player-card {
+    background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    border: 2px solid var(--accent);
+    border-radius: 16px;
+    padding: 20px 28px;
+    display: none;
+  }
+  .player-card.visible { display: block; }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+    .filter-bar {
+      padding: 10px 16px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .filter-group {
+      width: 100%;
+    }
+    .filter-select {
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+    }
+    header {
+      padding: 16px !important;
+    }
+    header h1 {
+      font-size: 1.4rem !important;
+    }
+    main {
+      padding: 16px !important;
+    }
+    .section-card {
+      padding: 16px;
+      border-radius: 12px;
+    }
+    .kpi-card {
+      padding: 16px 14px;
+      border-radius: 12px;
+    }
+    .kpi-value {
+      font-size: 1.8rem;
+    }
+    .kpi-label {
+      font-size: 0.65rem;
+    }
+    .section-title {
+      font-size: 1.05rem;
+    }
+    .section-subtitle {
+      font-size: 0.78rem;
+    }
+    .weekly-select {
+      max-width: 100%;
+      font-size: 0.85rem;
+    }
+    .player-card {
+      padding: 14px 16px;
+    }
+    .player-chip {
+      padding: 5px 10px;
+      font-size: 0.72rem;
+    }
+    .toggle-btn {
+      padding: 5px 10px;
+      font-size: 0.72rem;
+    }
+    #heatmap .section-subtitle {
+      font-size: 0.7rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header style="background: linear-gradient(135deg, #0f4c2e 0%, #166534 40%, #15803d 100%);"
+  class="px-4 md:px-8 py-4 md:py-6 flex items-center justify-between sticky top-0 z-50 shadow-lg">
+  <div>
+    <h1 class="text-xl md:text-3xl font-extrabold text-white tracking-tight">⚽ כדורגל אגם ג׳ VIP</h1>
+    <p id="header-subtitle" class="text-sm text-emerald-200 mt-1">
+      02/04/2025 — 11/03/2026
+    </p>
+  </div>
+</header>
+
+<!-- Filters -->
+<div class="filter-bar">
+  <div class="filter-group">
+    <label class="text-sm font-semibold text-gray-700">החל מ-</label>
+    <select id="date-filter" class="filter-select"></select>
+  </div>
+  <div class="filter-group">
+    <label class="text-sm font-semibold text-gray-700">שחקן</label>
+    <select id="player-filter" class="filter-select"></select>
+  </div>
+</div>
+
+<div class="flex">
+  <nav id="sidebar" class="w-52 bg-white/80 backdrop-blur border-l border-gray-200 sticky overflow-y-auto p-4 space-y-1 hidden md:block">
+    <a href="#player-card-section" id="sidebar-player" class="block px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50" style="display:none;">כרטיס שחקן</a>
+    <a href="#kpis" class="block px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50">סיכום</a>
+    <a href="#bar-chart" class="block px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50">תרשים נוכחות</a>
+    <a href="#heatmap" class="block px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50">מפת חום</a>
+    <a href="#weekly" class="block px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50">היסטוריה שבועית</a>
+    <a href="#aliases" class="block px-3 py-2 text-sm text-gray-700 hover:bg-emerald-50">מפתח שמות</a>
+  </nav>
+
+  <main class="flex-1 p-4 md:p-8 space-y-6 md:space-y-10 max-w-7xl">
+
+    <!-- Player Card (shown when player filter is active) -->
+    <section id="player-card-section" class="player-card">
+      <div class="flex items-baseline gap-4 mb-3">
+        <span class="text-2xl font-extrabold" id="pc-name" style="color: var(--pitch-dark);"></span>
+        <span class="text-lg font-bold" id="pc-pct" style="color: var(--pitch-mid);"></span>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm" id="pc-stats"></div>
+      <p class="text-xs text-gray-500 mt-3" id="pc-games-list"></p>
+    </section>
+
+    <!-- KPIs -->
+    <section id="kpis" class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+      <div class="kpi-card">
+        <p class="kpi-label">סה״כ משחקים</p>
+        <p class="kpi-value text-gray-900" id="kpi-total">—</p>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">שחקנים ייחודיים</p>
+        <p class="kpi-value text-gray-900" id="kpi-unique">—</p>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">% שבועות עם משחק</p>
+        <p class="kpi-value" style="color: var(--pitch-mid);" id="kpi-pct">—</p>
+      </div>
+      <div class="kpi-card">
+        <p class="kpi-label">הכי נאמן</p>
+        <p class="kpi-value" style="color: var(--pitch-mid);" id="kpi-loyal-name">—</p>
+        <p class="text-sm text-gray-500 mt-1" id="kpi-loyal-detail"></p>
+      </div>
+    </section>
+
+    <!-- Bar Chart -->
+    <section id="bar-chart" class="section-card">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="section-title">תרשים נוכחות</h2>
+        <button id="bar-toggle" class="toggle-btn" onclick="toggleBar()">
+          <span id="bar-toggle-text">הצג הכל</span> <span id="bar-toggle-icon">&#9660;</span>
+        </button>
+      </div>
+      <p class="section-subtitle" id="bar-subtitle">אחוז הגעה. הקו המקווקו מסמן 50%.</p>
+      <div id="bar-chart-el" style="width:100%; height:800px;"></div>
+    </section>
+
+    <!-- Heatmap -->
+    <section id="heatmap" class="section-card">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="section-title">מפת חום</h2>
+        <button id="heat-toggle" class="toggle-btn" onclick="toggleHeat()">
+          <span id="heat-toggle-text">הצג הכל</span> <span id="heat-toggle-icon">&#9660;</span>
+        </button>
+      </div>
+      <p class="section-subtitle">כל עמודה = משחק, כל שורה = שחקן. <span style="color:#10b981;">&#9632;</span> רביעי &nbsp; <span style="color:#86efac;">&#9632;</span> שישי &nbsp; <span style="color:#f3f4f6;">&#9632;</span> לא הגיע</p>
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <div dir="ltr" id="heatmap-el" style="min-width:700px; width:100%; height:600px;"></div>
+      </div>
+    </section>
+
+    <!-- Weekly History (dropdown) -->
+    <section id="weekly" class="section-card">
+      <h2 class="section-title">היסטוריה שבועית</h2>
+      <p class="section-subtitle">בחרו משחק מהרשימה כדי לראות את השחקנים.</p>
+      <select id="weekly-select" class="weekly-select mb-5"></select>
+      <div id="weekly-players" class="flex flex-wrap gap-2"></div>
+    </section>
+
+    <!-- Aliases -->
+    <section id="aliases" class="section-card">
+      <h2 class="section-title">מפתח שמות</h2>
+      <p class="section-subtitle">כל שם קנוני ואילו וריאציות שויכו אליו.</p>
+      <table id="alias-table" class="data-table display compact stripe" style="width:100%">
+        <thead><tr><th>שם קנוני</th><th>וריאציות</th></tr></thead>
+        <tbody><tr><td class="font-medium">אבירן</td><td class="text-sm" style="color:#9ca3af;">אבירן בכור, אבירן שרון</td></tr><tr><td class="font-medium">אופיר</td><td class="text-sm" style="color:#9ca3af;">אופיר, אופיר רונן</td></tr><tr><td class="font-medium">איילי</td><td class="text-sm" style="color:#9ca3af;">איילי, איילין, איילין טוברוק</td></tr><tr><td class="font-medium">איציק מועלם</td><td class="text-sm" style="color:#9ca3af;">איציק מועלם</td></tr><tr><td class="font-medium">איציק שיש</td><td class="text-sm" style="color:#9ca3af;">איציק שיש</td></tr><tr><td class="font-medium">אלירן</td><td class="text-sm" style="color:#9ca3af;">אלירן, אלירן גדילוב</td></tr><tr><td class="font-medium">אסף</td><td class="text-sm" style="color:#9ca3af;">אסף, אסף כנר, אסף.כ</td></tr><tr><td class="font-medium">אסף שמחי</td><td class="text-sm" style="color:#9ca3af;">אסף שמחי</td></tr><tr><td class="font-medium">אריאל</td><td class="text-sm" style="color:#9ca3af;">אריאל, אריאל ביט, אריאל ביטון</td></tr><tr><td class="font-medium">בוריס</td><td class="text-sm" style="color:#9ca3af;">בוריס, בוריס+1</td></tr><tr><td class="font-medium">בן</td><td class="text-sm" style="color:#9ca3af;">בן, בן כהן, בן חיימוב</td></tr><tr><td class="font-medium">בני</td><td class="text-sm" style="color:#9ca3af;">בני, בני.כ, בנימין פרטוש</td></tr><tr><td class="font-medium">גיל</td><td class="text-sm" style="color:#9ca3af;">גיל, גילילי</td></tr><tr><td class="font-medium">דוד</td><td class="text-sm" style="color:#9ca3af;">דוד, דוד מויאל</td></tr><tr><td class="font-medium">דודו</td><td class="text-sm" style="color:#9ca3af;">דודו, דודו פרץ</td></tr><tr><td class="font-medium">דולב</td><td class="text-sm" style="color:#9ca3af;">דולב, דולב חזיזה</td></tr><tr><td class="font-medium">דניאל שיש</td><td class="text-sm" style="color:#9ca3af;">שיש, שיש JR, שיש Jr, דניאל שיש, שיש דניאל, דניאל, דניאל JR</td></tr><tr><td class="font-medium">דרור</td><td class="text-sm" style="color:#9ca3af;">דרור אוהד, דרור</td></tr><tr><td class="font-medium">חיים JR</td><td class="text-sm" style="color:#9ca3af;">חיים JR, חיים גוניור, חיים גו'ניור</td></tr><tr><td class="font-medium">חיים ביט</td><td class="text-sm" style="color:#9ca3af;">חיים ביט, חיים ביטון, חיים, חיים ב, חיים.ביט, חיים.ב</td></tr><tr><td class="font-medium">יונסי</td><td class="text-sm" style="color:#9ca3af;">יונס, יונסי</td></tr><tr><td class="font-medium">יונתן</td><td class="text-sm" style="color:#9ca3af;">יונתן, יונתן.י</td></tr><tr><td class="font-medium">יוסי</td><td class="text-sm" style="color:#9ca3af;">יוסי, יוסי גאנח, יוסי ג'נאח</td></tr><tr><td class="font-medium">ירון</td><td class="text-sm" style="color:#9ca3af;">ירון</td></tr><tr><td class="font-medium">מיכאל</td><td class="text-sm" style="color:#9ca3af;">מיכאל, מיכאל ברוש, ?מיכאל</td></tr><tr><td class="font-medium">נדב יהלום</td><td class="text-sm" style="color:#9ca3af;">נדב, נדב יהלום</td></tr><tr><td class="font-medium">ניקו</td><td class="text-sm" style="color:#9ca3af;">ניקו, ניק, ניקולאי, ניקולס אגמים</td></tr><tr><td class="font-medium">נתן</td><td class="text-sm" style="color:#9ca3af;">נתן, נתן ביסט, נתן ביסטמאסטר, נתן ביסט מאסטר, נתן פופר 5</td></tr><tr><td class="font-medium">סולי</td><td class="text-sm" style="color:#9ca3af;">סול, סולי, סולו, סולן, סולומון</td></tr><tr><td class="font-medium">עדי</td><td class="text-sm" style="color:#9ca3af;">עדי, עדי יצחק, עדי בן יצחק</td></tr><tr><td class="font-medium">עוזי</td><td class="text-sm" style="color:#9ca3af;">עוזי שרון, עוזי חיטמן</td></tr><tr><td class="font-medium">עידן</td><td class="text-sm" style="color:#9ca3af;">עידן, עידן עטיה, עידן(אסף), עידן בלם, עידן ג'וקר, עידן גו`קר, עידן כהן שרון, עידן אורח</td></tr><tr><td class="font-medium">צחי</td><td class="text-sm" style="color:#9ca3af;">צחי, צחי שוער</td></tr><tr><td class="font-medium">רפי</td><td class="text-sm" style="color:#9ca3af;">רפי, רפאל, רפול, רפי/רפאל, רפי (אורח)</td></tr><tr><td class="font-medium">שגיא</td><td class="text-sm" style="color:#9ca3af;">שגיא, שגיא בושרי</td></tr></tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script>
+var ALL_GAMES = [{"date": "2025-04-02", "label": "02/04/25 (רביעי)", "labelShort": "02/04/25 (רביעי)", "players": ["ישי", "בני", "חיים ביט", "נועם", "אסף", "יגאל", "דולב", "בוריס", "אריאל", "נדב יהלום", "אלירן", "שלומי", "אופיר", "רפי", "עידן", "נתנאל וייצמן", "דוד", "ירון"], "count": 18, "isFriday": false}, {"date": "2025-04-09", "label": "09/04/25 (רביעי)", "labelShort": "09/04/25 (רביעי)", "players": ["תומר", "ירון", "שלומי", "דולב", "זוארץ", "בן", "חיים JR", "בוריס", "אלכס (אב)", "אלכס JR", "נדב יהלום", "חיים ביט", "בני", "נועם", "סולי", "אלירן"], "count": 16, "isFriday": false}, {"date": "2025-04-16", "label": "16/04/25 (רביעי)", "labelShort": "16/04/25 (רביעי)", "players": ["תומר", "ישי", "בן", "זוארץ", "צחי", "בני", "חיים ביט", "דין", "יונתן", "ניר ספיר", "אלכס (אב)", "אלכס JR", "אסף שמחי", "סולי", "רפי", "שי תשובה", "אופיר", "אליעד"], "count": 18, "isFriday": false}, {"date": "2025-04-23", "label": "23/04/25 (רביעי)", "labelShort": "23/04/25 (רביעי)", "players": ["תומר", "זוארץ", "חיים ביט", "בני", "דניאל שיש", "נועם", "דולב", "אלכס (אב)", "אלכס JR", "ישי", "ירון", "נדב יהלום", "יונסי", "אלירן", "סולי", "נתנאל", "דין", "בוריס"], "count": 18, "isFriday": false}, {"date": "2025-04-30", "label": "30/04/25 (רביעי)", "labelShort": "30/04/25 (רביעי)", "players": ["תומר", "סער", "חיים ביט", "בני", "זוארץ", "דולב", "ישי", "אריאל", "בוריס", "דין", "יונתן", "גיל", "צחי", "סולי", "אוהד", "אלכס (אב)", "אלכס JR", "עדי"], "count": 18, "isFriday": false}, {"date": "2025-05-07", "label": "07/05/25 (רביעי)", "labelShort": "07/05/25 (רביעי)", "players": ["תומר", "סער", "ישי", "חיים ביט", "בני", "זוארץ", "נועם", "בן", "סולי", "דולב", "אוהד", "אריאל", "חיים JR", "יונסי", "גיל", "שלומי", "בוריס", "אלירן"], "count": 18, "isFriday": false}, {"date": "2025-05-14", "label": "14/05/25 (רביעי)", "labelShort": "14/05/25 (רביעי)", "players": ["תומר", "סער", "יונתן", "זוארץ", "ישי", "בן", "אריאל", "אוהד", "דולב", "סולי", "ירון", "אלכס (אב)", "אלכס JR", "צחי", "ניר", "חיים ביט", "רפי", "שלומי"], "count": 18, "isFriday": false}, {"date": "2025-05-21", "label": "21/05/25 (רביעי)", "labelShort": "21/05/25 (רביעי)", "players": ["תומר", "זוארץ", "אריאל", "רפי", "חיים ביט", "ישי", "דולב", "יוסי", "שלומי", "גיל", "יונתן", "נדב יהלום", "אסף", "אוהד", "סולי", "עלי", "דודו"], "count": 17, "isFriday": false}, {"date": "2025-05-28", "label": "28/05/25 (רביעי)", "labelShort": "28/05/25 (רביעי)", "players": ["תומר", "סער", "דולב", "זוארץ", "בן", "סולי", "חיים ביט", "אלירן", "יונתן", "נדב יהלום", "ניר", "עדי", "אלכס (אב)", "אלכס JR", "אלי אוחנה", "אריאל", "דרור", "עידן"], "count": 18, "isFriday": false}, {"date": "2025-06-04", "label": "04/06/25 (רביעי)", "labelShort": "04/06/25 (רביעי)", "players": ["תומר", "סער", "זוארץ", "בן", "דולב", "צחי", "אלירן", "יונסי", "אסף"], "count": 9, "isFriday": false}, {"date": "2025-06-11", "label": "11/06/25 (רביעי)", "labelShort": "11/06/25 (רביעי)", "players": ["תומר", "עדי", "אופיר", "עידן", "יונתן", "שגיא", "חיים ביט", "אלירן", "אלי אוחנה", "בוריס", "ניקו", "נתן", "מולי", "ניר ספיר"], "count": 14, "isFriday": false}, {"date": "2025-06-18", "label": "18/06/25 (רביעי)", "labelShort": "18/06/25 (רביעי)", "players": ["תומר", "נועם", "ירון", "אלכס (אב)", "אלכס JR", "דולב", "חיים ביט", "רפי", "זוארץ", "דודו", "ניר ספיר", "נתנאל", "עידן", "סולי", "צחי", "יונתן", "אלירן", "מולי"], "count": 18, "isFriday": false}, {"date": "2025-06-25", "label": "25/06/25 (רביעי)", "labelShort": "25/06/25 (רביעי)", "players": ["תומר", "נועם", "זוארץ", "עדי", "בני", "דולב", "אלירן", "חיים ביט", "בוריס", "חיים JR", "רפי", "נדב יהלום", "סולי", "עידן", "אסף", "דוד", "מולי", "אופיר"], "count": 18, "isFriday": false}, {"date": "2025-07-02", "label": "02/07/25 (רביעי)", "labelShort": "02/07/25 (רביעי)", "players": ["זוארץ", "מולי", "דולב", "חיים ביט", "עדי", "יונתן", "שלומי", "רפי", "בני", "ניקו"], "count": 10, "isFriday": false}, {"date": "2025-07-09", "label": "09/07/25 (רביעי)", "labelShort": "09/07/25 (רביעי)", "players": ["תומר", "מולי", "זוארץ", "דולב", "נועם", "יונסי", "אלכס (אב)", "אלכס JR", "שלומי", "שגיא", "עדי", "סולי", "עידן", "בני", "חיים ביט", "רפי", "ניקו", "בן"], "count": 18, "isFriday": false}, {"date": "2025-07-16", "label": "16/07/25 (רביעי)", "labelShort": "16/07/25 (רביעי)", "players": ["תומר", "מולי", "רפי", "חיים ביט", "בני", "שגיא", "עדי", "אופיר", "עידן", "סולי", "יונתן", "דניאל שיש", "דולב", "צחי", "אסף", "ניקו", "שלומי", "יגאל"], "count": 18, "isFriday": false}, {"date": "2025-07-23", "label": "23/07/25 (רביעי)", "labelShort": "23/07/25 (רביעי)", "players": ["תומר", "מולי", "זוארץ", "דולב", "עדי", "אלכס (אב)", "אלכס JR", "גיל", "ניקו", "עידן", "סולי", "אסף", "יעקובוב איגבני", "דודו", "נועם", "שגיא", "שישjr", "דוד"], "count": 18, "isFriday": false}, {"date": "2025-07-30", "label": "30/07/25 (רביעי)", "labelShort": "30/07/25 (רביעי)", "players": ["תומר", "סער", "מולי", "נועם", "דולב", "זוארץ", "בן", "נדב יהלום", "ניקו", "בוריס", "דניאל שיש", "רפי", "חיים ביט", "עידן", "סולי", "עדי", "יגאל", "אופיר"], "count": 18, "isFriday": false}, {"date": "2025-08-06", "label": "06/08/25 (רביעי)", "labelShort": "06/08/25 (רביעי)", "players": ["תומר", "מולי", "עדי", "בוריס", "נועם", "בן", "שלומי", "גיל", "נתנאל", "שגיא", "יוסי", "מיכאל", "עידן", "אבירן", "עוזי", "נועם שרון", "איציק מועלם"], "count": 17, "isFriday": false}, {"date": "2025-08-13", "label": "13/08/25 (רביעי)", "labelShort": "13/08/25 (רביעי)", "players": ["תומר", "מולי", "זוארץ", "דולב", "עידן", "שגיא", "דניאל שיש", "בן", "עדי", "נועם", "בני", "בוריס", "חיים ביט", "ניר ספיר", "אופיר", "נתנאל", "סולי", "צחי"], "count": 18, "isFriday": false}, {"date": "2025-08-20", "label": "20/08/25 (רביעי)", "labelShort": "20/08/25 (רביעי)", "players": ["תומר", "סער", "ירון", "מולי", "זוארץ", "עדי", "בני", "חיים ביט", "רפי", "דולב", "עידן", "דוד", "אסף", "נתנאל", "נועם", "שגיא", "שלומי", "ניקו"], "count": 18, "isFriday": false}, {"date": "2025-08-27", "label": "27/08/25 (רביעי)", "labelShort": "27/08/25 (רביעי)", "players": ["תומר", "ירון", "זוארץ", "דודו", "חיים ביט", "בני", "דולב", "עידן", "סולי", "בוריס", "ניר", "נועם", "עדי", "שגיא", "סער", "יגאל", "צחי", "אוהד"], "count": 18, "isFriday": false}, {"date": "2025-09-03", "label": "03/09/25 (רביעי)", "labelShort": "03/09/25 (רביעי)", "players": ["תומר", "דניאל שיש", "בן", "זוארץ", "ניר ספיר", "עדי", "שגיא", "רפי", "חיים ביט", "בני", "אופיר", "עידן", "סולי", "נועם", "נדב יהלום", "ניקו", "צחי", "אוהד"], "count": 18, "isFriday": false}, {"date": "2025-09-10", "label": "10/09/25 (רביעי)", "labelShort": "10/09/25 (רביעי)", "players": ["תומר", "מולי", "זוארץ", "מאור", "דניאל שיש", "שגיא", "דולב", "עידן", "סולי", "ניקו", "עדי", "אוהד", "נועם", "ירון", "בוריס", "בן", "אופיר", "ניר ספיר"], "count": 18, "isFriday": false}, {"date": "2025-09-17", "label": "17/09/25 (רביעי)", "labelShort": "17/09/25 (רביעי)", "players": ["תומר", "מולי", "ניקו", "דניאל שיש", "דודו", "מאור", "דולב", "עידן", "נתן", "אוהד", "בן", "יגאל", "סולי", "אלירן", "אופיר", "מיכאל", "נתנאל"], "count": 17, "isFriday": false}, {"date": "2025-09-24", "label": "24/09/25 (רביעי)", "labelShort": "24/09/25 (רביעי)", "players": ["תומר", "בן", "מולי", "נועם", "דולב", "עידן", "סולי", "ניקו", "מאור", "עדי", "נתן", "בוריס", "חיים JR", "מיכאל", "צחי", "רועי נועם", "אוהד"], "count": 17, "isFriday": false}, {"date": "2025-10-08", "label": "08/10/25 (רביעי)", "labelShort": "08/10/25 (רביעי)", "players": ["תומר", "מולי", "דולב", "ניקו", "בן", "ניר", "אסף -", "דוד -", "בוריס", "נתן", "עידן", "סולי", "מיכאל", "בני", "אופיר", "רפי", "אוהד", "צחי"], "count": 18, "isFriday": false}, {"date": "2025-10-15", "label": "15/10/25 (רביעי)", "labelShort": "15/10/25 (רביעי)", "players": ["תומר", "סער", "זוארץ", "מולי", "עדי", "דולב", "סולי", "מאור", "ניר", "שגיא", "בני", "דוד", "אסף", "ניקו", "בוריס", "נתן", "בן", "אוהד"], "count": 18, "isFriday": false}, {"date": "2025-10-22", "label": "22/10/25 (רביעי)", "labelShort": "22/10/25 (רביעי)", "players": ["תומר", "מולי", "נועם", "בני", "רפי", "זוארץ", "דולב", "ניר", "מאור", "בן", "שלומי", "עדי", "צחי", "יגאל", "אוהד", "בוריס", "אלכס (אב)", "אלכס JR"], "count": 18, "isFriday": false}, {"date": "2025-10-29", "label": "29/10/25 (רביעי)", "labelShort": "29/10/25 (רביעי)", "players": ["תומר", "מולי", "ניר", "ניקו", "דניאל שיש", "דולב", "בוריס", "צחי", "בן", "בני", "נתן", "שלומי", "מיכאל", "אלכס (אב)", "אלכס JR", "נועם", "אוהד", "סולי"], "count": 18, "isFriday": false}, {"date": "2025-11-05", "label": "05/11/25 (רביעי)", "labelShort": "05/11/25 (רביעי)", "players": ["תומר", "מולי", "ניר", "דניאל שיש", "מאור", "נתן", "צחי", "דולב", "נועם", "עידן", "סולי", "דוד", "אסף", "עדי", "בן", "אופיר", "אוהד", "דודו"], "count": 18, "isFriday": false}, {"date": "2025-11-12", "label": "12/11/25 (רביעי)", "labelShort": "12/11/25 (רביעי)", "players": ["תומר", "מולי", "שלומי", "ניקו", "רפי", "בני", "ניר", "נועם", "דולב", "דודו", "דניאל שיש", "בן", "אופיר", "נתן", "נדב יהלום", "עדי", "יגאל", "חיים JR"], "count": 18, "isFriday": false}, {"date": "2025-11-19", "label": "19/11/25 (רביעי)", "labelShort": "19/11/25 (רביעי)", "players": ["תומר", "מולי", "זוארץ", "עדי", "מאור", "אופיר", "דניאל שיש", "בן", "ניר", "דולב", "נועם", "בני", "נתן", "צחי", "יגאל", "נדב יהלום", "אוהד", "מיכאל"], "count": 18, "isFriday": false}, {"date": "2025-11-26", "label": "26/11/25 (רביעי)", "labelShort": "26/11/25 (רביעי)", "players": ["תומר", "עדי", "ניר", "ירון", "מולי", "שגיא", "מאור", "דניאל שיש", "ניקו", "זוארץ", "בוריס", "עידן", "אבירן", "אלכס JR", "אלכס (אב)", "ליאור לציצקי", "פז"], "count": 17, "isFriday": false}, {"date": "2025-12-03", "label": "03/12/25 (רביעי)", "labelShort": "03/12/25 (רביעי)", "players": ["תומר", "מולי", "בני", "מאור", "ניקו", "שגיא", "עידן", "סולי", "נדב יהלום", "בן", "נועם", "נתן", "צחי", "ניר ספיר", "יגאל", "אוהד", "אלכס (אב)", "אלכס JR"], "count": 18, "isFriday": false}, {"date": "2025-12-10", "label": "10/12/25 (רביעי)", "labelShort": "10/12/25 (רביעי)", "players": ["תומר", "בני", "ניר", "זוארץ", "מולי", "נועם", "ירון", "ניקו", "שלומי", "שגיא", "סולי", "אוהד", "דודו", "עדי", "צחי", "ברוריה", "נתן"], "count": 17, "isFriday": false}, {"date": "2025-12-17", "label": "17/12/25 (רביעי)", "labelShort": "17/12/25 (רביעי)", "players": ["תומר", "זוארץ", "מולי", "נועם", "דולב", "ירון", "עדי", "ניר", "מאור", "עידן", "נתן", "סולי", "דניאל שיש", "שגיא", "צחי", "אוהד", "רפי", "חיים ביט"], "count": 18, "isFriday": false}, {"date": "2025-12-24", "label": "24/12/25 (רביעי)", "labelShort": "24/12/25 (רביעי)", "players": ["תומר", "מיכאל", "מולי", "עדי", "נתן", "ניר", "דולב", "נועם", "עידן", "סולי", "אסף", "מאור", "בוריס", "בן", "ירון", "שגיא", "בני", "ניקו"], "count": 18, "isFriday": false}, {"date": "2025-12-31", "label": "31/12/25 (רביעי)", "labelShort": "31/12/25 (רביעי)", "players": ["תומר", "דניאל שיש", "מולי", "זוארץ", "מאור", "נתן", "עדי", "בן", "בני", "סולי", "עידן", "אוהד", "ניקו", "ניר", "שגיא", "איילי", "ווילי", "יוסי"], "count": 18, "isFriday": false}, {"date": "2026-01-07", "label": "07/01/26 (רביעי)", "labelShort": "07/01/26 (רביעי)", "players": ["תומר", "איילי", "עדי", "מולי", "נדב יהלום", "שגיא", "מאור", "נתן", "בן", "דולב", "עידן", "סולי", "אופיר", "מיכאל", "ירון", "יגאל", "ניר", "צחי"], "count": 18, "isFriday": false}, {"date": "2026-01-14", "label": "14/01/26 (רביעי)", "labelShort": "14/01/26 (רביעי)", "players": ["תומר", "סער", "מולי", "ניר", "עדי", "דולב", "דניאל שיש", "נועם", "מאור", "נתן", "סולי", "בוריס", "צחי", "אוהד", "דודו", "נדב יהלום", "יוסי", "עידן"], "count": 18, "isFriday": false}, {"date": "2026-01-21", "label": "21/01/26 (רביעי)", "labelShort": "21/01/26 (רביעי)", "players": ["תומר", "בני", "מאור", "מולי", "אוהד", "ניקו", "דניאל שיש", "בוריס", "דודו", "דוד", "אסף", "נדב יהלום", "נתן", "רפי", "יגאל", "ירון", "אופיר", "חיים ביט"], "count": 18, "isFriday": false}, {"date": "2026-01-28", "label": "28/01/26 (רביעי)", "labelShort": "28/01/26 (רביעי)", "players": ["תומר", "אלכס (אב)", "אלכס JR", "מולי", "זוארץ", "ניר", "עדי", "נועם", "סולי", "עידן", "נדב יהלום", "שלומי", "בן", "נתן", "בוריס", "ניקו", "דולב", "ירון"], "count": 18, "isFriday": false}, {"date": "2026-01-30", "label": "30/01/26 (שישי)", "labelShort": "30/01/26 (שישי)", "players": ["תומר", "נועם", "דולב", "מולי", "סולי", "בן", "נדב יהלום", "שי", "נתן", "אסף", "יוסי", "אבירן", "דוד לרנר"], "count": 13, "isFriday": true}, {"date": "2026-02-04", "label": "04/02/26 (רביעי)", "labelShort": "04/02/26 (רביעי)", "players": ["תומר", "ירון", "עדי", "אוהד", "מולי", "זוארץ", "נועם", "דולב", "בוריס", "מאור", "סולי", "עידן", "אסף", "דוד", "נתן", "שגיא", "שלומי", "יגאל"], "count": 18, "isFriday": false}, {"date": "2026-02-11", "label": "11/02/26 (רביעי)", "labelShort": "11/02/26 (רביעי)", "players": ["תומר", "סער", "ירון", "בני", "עדי", "נועם", "דולב", "בן", "מולי", "מאור", "אופיר", "סולי", "נתן", "איילי", "צחי", "אוהד", "נדב יהלום", "מיכאל"], "count": 18, "isFriday": false}, {"date": "2026-02-18", "label": "18/02/26 (רביעי)", "labelShort": "18/02/26 (רביעי)", "players": ["תומר", "סער", "אלכס JR", "מולי", "דולב", "בן", "נתן", "שגיא", "מאור", "עידן", "סולי", "שלומי", "צחי", "ירון", "מיכאל", "אלכס (אב)", "אוהד", "איילי"], "count": 18, "isFriday": false}, {"date": "2026-02-25", "label": "25/02/26 (רביעי)", "labelShort": "25/02/26 (רביעי)", "players": ["תומר", "סער", "בני", "מולי", "דולב", "בן", "זוארץ", "בוריס", "נתן", "מיכאל", "סולי", "מאור", "יגאל", "יוסי", "דודו", "נדב יהלום", "עידן", "עוזי"], "count": 18, "isFriday": false}, {"date": "2026-03-04", "label": "04/03/26 (רביעי)", "labelShort": "04/03/26 (רביעי)", "players": ["תומר", "שגיא", "אלכס JR", "מולי", "דולב", "נועם", "מאור", "עידן", "סולי", "נתן", "בן", "זוארץ", "בני", "שלומי", "מיכאל", "בוריס", "יגאל", "צחי"], "count": 18, "isFriday": false}, {"date": "2026-03-06", "label": "06/03/26 (שישי)", "labelShort": "06/03/26 (שישי)", "players": ["נועם", "רועי", "סער", "סולי", "זוארץ", "דולב", "מולי", "יוסי", "שגיא", "נתן", "אוהד", "יונתן", "דביר", "גבאי"], "count": 14, "isFriday": true}, {"date": "2026-03-11", "label": "11/03/26 (רביעי)", "labelShort": "11/03/26 (רביעי)", "players": ["תומר", "נועם", "זוארץ", "מולי", "דולב", "סולי", "עדי", "עידן", "בן", "בוריס", "איציק שיש", "מאור", "שגיא", "יגאל", "אוהד", "איילי", "נדב יהלום", "רועי נועם"], "count": 18, "isFriday": false}];
+var FILTER_OPTIONS = [{"value": "2025-04", "label": "04/2025"}, {"value": "2025-05", "label": "05/2025"}, {"value": "2025-06", "label": "06/2025"}, {"value": "2025-07", "label": "07/2025"}, {"value": "2025-08", "label": "08/2025"}, {"value": "2025-09", "label": "09/2025"}, {"value": "2025-10", "label": "10/2025"}, {"value": "2025-11", "label": "11/2025"}, {"value": "2025-12", "label": "12/2025"}, {"value": "2026-01", "label": "01/2026"}, {"value": "2026-02", "label": "02/2026"}, {"value": "2026-03", "label": "03/2026"}];
+var MIN_HEATMAP = 12;
+
+var barChart, heatChart;
+var barExpanded = false;
+var heatExpanded = false;
+var lastSorted = [];
+var lastGames = [];
+var lastHmGames = [];
+var selectedPlayer = '';
+
+function isoWeek(dateStr) {
+  var d = new Date(dateStr);
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  var yearStart = new Date(d.getFullYear(), 0, 4);
+  var wk = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return d.getFullYear() + '-W' + wk;
+}
+
+function toggleBar() {
+  barExpanded = !barExpanded;
+  document.getElementById('bar-toggle-text').textContent = barExpanded ? 'Top 30' : '\u05D4\u05E6\u05D2 \u05D4\u05DB\u05DC';
+  document.getElementById('bar-toggle-icon').innerHTML = barExpanded ? '&#9650;' : '&#9660;';
+  renderBar();
+}
+
+function toggleHeat() {
+  heatExpanded = !heatExpanded;
+  document.getElementById('heat-toggle-text').textContent = heatExpanded ? 'Top 30' : '\u05D4\u05E6\u05D2 \u05D4\u05DB\u05DC';
+  document.getElementById('heat-toggle-icon').innerHTML = heatExpanded ? '&#9650;' : '&#9660;';
+  renderHeat();
+}
+
+function renderBar() {
+  var sorted = lastSorted;
+  var totalGames = lastGames.length;
+  if (totalGames === 0) return;
+
+  var limit = barExpanded ? sorted.length : Math.min(30, sorted.length);
+  var names = sorted.slice(0, limit).map(function(s) { return s[0]; });
+  var pcts = sorted.slice(0, limit).map(function(s) { return Math.round(100 * s[1] / totalGames * 10) / 10; });
+
+  var barEl = document.getElementById('bar-chart-el');
+  barEl.style.height = Math.max(500, names.length * 26) + 'px';
+  barChart.resize();
+
+  var colors = pcts.slice().reverse().map(function(v, i) {
+    var name = names.slice().reverse()[i];
+    if (selectedPlayer && name === selectedPlayer) {
+      return { value: v, itemStyle: { color: '#fbbf24', borderRadius: [0, 4, 4, 0], borderWidth: 2, borderColor: '#d97706' } };
+    }
+    return {
+      value: v,
+      itemStyle: {
+        color: v >= 50 ? 'rgba(16,185,129,0.85)' : 'rgba(96,165,250,0.75)',
+        borderRadius: [0, 4, 4, 0]
+      }
+    };
+  });
+
+  var mob = window.innerWidth < 768;
+  barChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: function(params) { return params[0].name + ': ' + params[0].value + '%'; }
+    },
+    grid: { left: mob ? 80 : 120, right: mob ? 45 : 60, top: 20, bottom: 40 },
+    xAxis: { type: 'value', max: 100, axisLabel: { fontSize: mob ? 9 : 11, formatter: '{value}%' } },
+    yAxis: { type: 'category', data: names.slice().reverse(), axisLabel: { fontSize: mob ? 9 : 11 } },
+    series: [{
+      type: 'bar',
+      data: colors,
+      barMaxWidth: mob ? 14 : 20,
+      label: { show: true, position: 'right', fontSize: mob ? 9 : 11, formatter: '{c}%' },
+      markLine: {
+        silent: true, symbol: 'none',
+        lineStyle: { type: 'dashed', color: '#ef4444', width: 2 },
+        label: { formatter: '50%', position: 'end', fontSize: 11, color: '#ef4444' },
+        data: [{ xAxis: 50 }]
+      }
+    }]
+  }, true);
+}
+
+function renderHeat() {
+  var sorted = lastSorted;
+  var hmGames = lastHmGames;
+  if (hmGames.length === 0) return;
+
+  var limit = heatExpanded ? sorted.length : Math.min(30, sorted.length);
+  var hmLabels = hmGames.map(function(g) { return g.labelShort; });
+  var hmIsFriday = hmGames.map(function(g) { return g.isFriday; });
+  var players = sorted.slice(0, limit).map(function(s) { return s[0]; });
+
+  var fullHeat = [];
+  for (var wi = 0; wi < hmGames.length; wi++) {
+    var pSet = {};
+    hmGames[wi].players.forEach(function(p) { pSet[p] = true; });
+    var fri = hmGames[wi].isFriday;
+    for (var pi = 0; pi < players.length; pi++) {
+      fullHeat.push([wi, pi, pSet[players[pi]] ? (fri ? 2 : 1) : 0]);
+    }
+  }
+
+  var hmEl = document.getElementById('heatmap-el');
+  hmEl.style.height = Math.max(400, players.length * 24 + 100) + 'px';
+  heatChart.resize();
+
+  var mobH = window.innerWidth < 768;
+  heatChart.setOption({
+    tooltip: {
+      formatter: function(p) {
+        if (!p.data) return '';
+        var w = hmLabels[p.data[0]];
+        var pl = players[p.data[1]];
+        var v = p.data[2];
+        var status = v === 0 ? '\u2717' : '\u2713';
+        var day = v === 2 ? ' (\u05E9\u05D9\u05E9\u05D9)' : '';
+        return pl + ' \u2014 ' + w + day + ' ' + status;
+      }
+    },
+    grid: { left: mobH ? 70 : 100, right: 10, top: 10, bottom: mobH ? 60 : 70 },
+    xAxis: {
+      type: 'category', data: hmLabels,
+      axisLabel: {
+        rotate: mobH ? 70 : 50, fontSize: mobH ? 7 : 9,
+        formatter: function(val, idx) { return hmIsFriday[idx] ? '\u2B50 ' + val : val; }
+      },
+      splitArea: { show: true }
+    },
+    yAxis: { type: 'category', data: players, axisLabel: { fontSize: mobH ? 9 : 11 } },
+    visualMap: {
+      show: false, type: 'piecewise',
+      pieces: [
+        { value: 0, color: '#f3f4f6' },
+        { value: 1, color: '#10b981' },
+        { value: 2, color: '#86efac' }
+      ]
+    },
+    series: [{
+      type: 'heatmap', data: fullHeat,
+      label: { show: false },
+      emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.4)' } }
+    }]
+  }, true);
+}
+
+function renderPlayerCard(games, sorted) {
+  var card = document.getElementById('player-card-section');
+  var sideLink = document.getElementById('sidebar-player');
+  if (!selectedPlayer) {
+    card.classList.remove('visible');
+    sideLink.style.display = 'none';
+    return;
+  }
+  var totalGames = games.length;
+  var count = 0;
+  var gameDates = [];
+  games.forEach(function(g) {
+    if (g.players.indexOf(selectedPlayer) >= 0) {
+      count++;
+      gameDates.push(g.label);
+    }
+  });
+  if (count === 0) {
+    card.classList.remove('visible');
+    sideLink.style.display = 'none';
+    return;
+  }
+  var pct = Math.round(100 * count / totalGames);
+  var rank = 0;
+  for (var i = 0; i < sorted.length; i++) {
+    if (sorted[i][0] === selectedPlayer) { rank = i + 1; break; }
+  }
+
+  document.getElementById('pc-name').textContent = selectedPlayer;
+  document.getElementById('pc-pct').textContent = pct + '% \u05D4\u05D2\u05E2\u05D4';
+  document.getElementById('pc-stats').innerHTML =
+    '<div><span class="text-gray-500">\u05DE\u05E9\u05D7\u05E7\u05D9\u05DD</span><br><b>' + count + '/' + totalGames + '</b></div>' +
+    '<div><span class="text-gray-500">\u05D3\u05D9\u05E8\u05D5\u05D2</span><br><b>#' + rank + '</b></div>' +
+    '<div><span class="text-gray-500">\u05E8\u05D0\u05E9\u05D5\u05DF</span><br><b>' + (gameDates[0] || '') + '</b></div>' +
+    '<div><span class="text-gray-500">\u05D0\u05D7\u05E8\u05D5\u05DF</span><br><b>' + (gameDates[gameDates.length - 1] || '') + '</b></div>';
+  document.getElementById('pc-games-list').textContent = '\u05DE\u05E9\u05D7\u05E7\u05D9\u05DD: ' + gameDates.join(' | ');
+  card.classList.add('visible');
+  sideLink.style.display = 'block';
+}
+
+function renderAll(games) {
+  var totalGames = games.length;
+  if (totalGames === 0) { return; }
+  lastGames = games;
+
+  var att = {};
+  games.forEach(function(g) {
+    g.players.forEach(function(p) { att[p] = (att[p] || 0) + 1; });
+  });
+  var uniquePlayers = Object.keys(att).length;
+  var sorted = Object.entries(att).sort(function(a, b) { return b[1] - a[1]; });
+  lastSorted = sorted;
+
+  var loyalName = sorted[0] ? sorted[0][0] : '\u2014';
+  var loyalCount = sorted[0] ? sorted[0][1] : 0;
+
+  var firstDate = new Date(games[0].date);
+  var lastDate = new Date(games[games.length - 1].date);
+  var calWeeks = Math.max(1, Math.round((lastDate - firstDate) / (7 * 86400000)) + 1);
+  var isoSet = {};
+  games.forEach(function(g) { isoSet[isoWeek(g.date)] = true; });
+  var pctWeeks = Math.round(100 * Object.keys(isoSet).length / calWeeks);
+  var friCount = games.filter(function(g) { return g.isFriday; }).length;
+
+  document.getElementById('kpi-total').textContent = totalGames;
+  document.getElementById('kpi-unique').textContent = uniquePlayers;
+  document.getElementById('kpi-pct').textContent = pctWeeks + '%';
+  document.getElementById('kpi-loyal-name').textContent = loyalName;
+  document.getElementById('kpi-loyal-detail').textContent = loyalCount + '/' + totalGames + ' \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD (' + Math.round(100 * loyalCount / totalGames) + '%)';
+
+  var subParts = [totalGames + ' \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD'];
+  if (friCount > 0) subParts.push(friCount + ' \u05DE\u05E9\u05D7\u05E7\u05D9 \u05E9\u05D9\u05E9\u05D9');
+  document.getElementById('header-subtitle').innerHTML =
+    games[0].label.split('(')[0].trim() + ' \u2014 ' + games[games.length - 1].label.split('(')[0].trim() +
+    ' &bull; ' + subParts.join(' &bull; ') +
+    ' &bull; <span class="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-400 text-emerald-950">LIVE</span>';
+
+  document.getElementById('bar-subtitle').textContent = '\u05D0\u05D7\u05D5\u05D6 \u05D4\u05D2\u05E2\u05D4 \u05DE\u05EA\u05D5\u05DA ' + totalGames + ' \u05DE\u05E9\u05D7\u05E7\u05D9\u05DD. \u05D4\u05E7\u05D5 \u05D4\u05DE\u05E7\u05D5\u05D5\u05E7\u05D5 \u05DE\u05E1\u05DE\u05DF 50%.';
+
+  lastHmGames = games.filter(function(g) { return g.count >= MIN_HEATMAP; });
+
+  // Player filter dropdown
+  var pf = document.getElementById('player-filter');
+  var prevPlayer = pf.value;
+  pf.innerHTML = '<option value="">\u05DB\u05DC \u05D4\u05E9\u05D7\u05E7\u05E0\u05D9\u05DD</option>';
+  sorted.forEach(function(s) {
+    var opt = document.createElement('option');
+    opt.value = s[0];
+    opt.textContent = s[0] + ' (' + s[1] + ')';
+    pf.appendChild(opt);
+  });
+  if (prevPlayer && att[prevPlayer]) pf.value = prevPlayer;
+  else pf.value = '';
+  selectedPlayer = pf.value;
+
+  renderBar();
+  renderHeat();
+  renderPlayerCard(games, sorted);
+
+  // Weekly dropdown
+  var sel = document.getElementById('weekly-select');
+  var playersEl = document.getElementById('weekly-players');
+  sel.innerHTML = '';
+  games.forEach(function(g, idx) {
+    var opt = document.createElement('option');
+    opt.value = idx;
+    var prefix = g.isFriday ? '\u2B50 ' : '';
+    opt.textContent = prefix + g.label + ' \u2014 ' + g.count + ' \u05E9\u05D7\u05E7\u05E0\u05D9\u05DD';
+    sel.appendChild(opt);
+  });
+  sel.selectedIndex = games.length - 1;
+
+  function showWeek(idx) {
+    var g = games[idx];
+    playersEl.innerHTML = g.players.map(function(p, i) {
+      var hl = (selectedPlayer && p === selectedPlayer) ? ' highlighted' : '';
+      return '<span class="player-chip' + hl + '">' + (i + 1) + '. ' + p + '</span>';
+    }).join('');
+  }
+  sel.onchange = function() { showWeek(parseInt(this.value)); };
+  showWeek(games.length - 1);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  $('#alias-table').DataTable({
+    pageLength: 50, order: [[0, 'asc']],
+    dom: '<"flex items-center justify-between mb-2"lf>tip',
+    language: { search: '\u05D7\u05D9\u05E4\u05D5\u05E9:' }
+  });
+
+  barChart = echarts.init(document.getElementById('bar-chart-el'));
+  heatChart = echarts.init(document.getElementById('heatmap-el'));
+
+  // Date filter
+  var filterEl = document.getElementById('date-filter');
+  var allOpt = document.createElement('option');
+  allOpt.value = '';
+  allOpt.textContent = '\u05D4\u05DB\u05DC (\u05DE\u05D4\u05D4\u05EA\u05D7\u05DC\u05D4)';
+  filterEl.appendChild(allOpt);
+
+  FILTER_OPTIONS.forEach(function(mo) {
+    var opt = document.createElement('option');
+    opt.value = mo.value;
+    opt.textContent = mo.label;
+    filterEl.appendChild(opt);
+  });
+
+  // Default: 2026-01
+  filterEl.value = '2026-01';
+  if (!filterEl.value) filterEl.value = '';
+
+  function applyFilter() {
+    var from = filterEl.value;
+    var filtered = from
+      ? ALL_GAMES.filter(function(g) { return g.date >= from; })
+      : ALL_GAMES;
+    renderAll(filtered);
+  }
+
+  filterEl.addEventListener('change', applyFilter);
+
+  // Player filter
+  document.getElementById('player-filter').addEventListener('change', function() {
+    selectedPlayer = this.value;
+    renderBar();
+    renderHeat();
+    renderPlayerCard(lastGames, lastSorted);
+    // Re-render weekly to highlight
+    var sel = document.getElementById('weekly-select');
+    if (sel.selectedIndex >= 0) {
+      var g = lastGames[parseInt(sel.value)];
+      if (g) {
+        var playersEl = document.getElementById('weekly-players');
+        playersEl.innerHTML = g.players.map(function(p, i) {
+          var hl = (selectedPlayer && p === selectedPlayer) ? ' highlighted' : '';
+          return '<span class="player-chip' + hl + '">' + (i + 1) + '. ' + p + '</span>';
+        }).join('');
+      }
+    }
+  });
+
+  applyFilter();
+
+  // Sidebar
+  var sections = document.querySelectorAll('main section[id]');
+  var sidebarLinks = document.querySelectorAll('#sidebar a');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        sidebarLinks.forEach(function(a) { a.classList.remove('active'); });
+        var active = document.querySelector('#sidebar a[href="#' + entry.target.id + '"]');
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(function(sec) { observer.observe(sec); });
+
+  // Sticky positioning: filter bar below header, sidebar below both
+  function updateStickyOffsets() {
+    var header = document.querySelector('header');
+    var filterBar = document.querySelector('.filter-bar');
+    var sidebar = document.getElementById('sidebar');
+    var hh = header.offsetHeight;
+    var fh = filterBar.offsetHeight;
+    filterBar.style.top = hh + 'px';
+    if (sidebar) sidebar.style.top = (hh + fh) + 'px';
+    if (sidebar) sidebar.style.height = 'calc(100vh - ' + (hh + fh) + 'px)';
+  }
+  updateStickyOffsets();
+
+  window.addEventListener('resize', function() {
+    barChart.resize();
+    heatChart.resize();
+    updateStickyOffsets();
+  });
+});
+</script>
+</body>
+</html>
