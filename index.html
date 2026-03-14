@@ -561,7 +561,13 @@ function renderAll(games) {
 
   var MIN_APPEARANCES = 5;
 
-  // Count appearances and find first game index per player
+  // Global appearances (across ALL data) for min-filter eligibility
+  var globalAtt = {};
+  ALL_GAMES.forEach(function(g) {
+    g.players.forEach(function(p) { globalAtt[p] = (globalAtt[p] || 0) + 1; });
+  });
+
+  // Count appearances and find first game index per player in filtered view
   var att = {};
   var firstIdx = {};
   games.forEach(function(g, idx) {
@@ -583,8 +589,8 @@ function renderAll(games) {
   // Sort by pct descending, then by count descending
   entries.sort(function(a, b) { return b[2] - a[2] || b[1] - a[1]; });
 
-  // For bar chart and heatmap: only players with >= MIN_APPEARANCES
-  var sorted = entries.filter(function(e) { return e[1] >= MIN_APPEARANCES; });
+  // For bar chart and heatmap: only players with >= MIN_APPEARANCES across ALL data
+  var sorted = entries.filter(function(e) { return (globalAtt[e[0]] || 0) >= MIN_APPEARANCES; });
   lastSorted = sorted;
 
   var loyalName = sorted[0] ? sorted[0][0] : '\u2014';
